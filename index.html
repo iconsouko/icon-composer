@@ -35,6 +35,7 @@
 
   body{
     min-height:100vh;
+    min-height:100dvh;
     padding: 28px 18px 64px;
     display:flex;
     justify-content:center;
@@ -143,6 +144,69 @@
   .slot-sub{ font-size:10.5px; color:var(--ink-dim); margin-top:2px; }
 
   input[type=file]{ display:none; }
+
+  /* ---------- Ring background panel ---------- */
+  .ring-panel{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:18px;
+  }
+  .ring-status{
+    font-size:12.5px;
+    line-height:1.7;
+    padding-left:12px;
+    border-left:2px solid var(--magenta);
+  }
+  .ring-status.ok{ border-left-color:var(--cyan); }
+  .ring-status.warn{ border-left-color:var(--key); }
+
+  details.adjust{ margin-top:12px; }
+  details.adjust summary{
+    font-size:12px;
+    color:var(--ink-dim);
+    cursor:pointer;
+    padding:6px 0;
+  }
+  .adjust-body{ padding-top:8px; }
+  .adjust-body .control-head{ margin-top:14px; }
+  .adjust-body .control-head:first-child{ margin-top:0; }
+
+  .pick-wrap{
+    position:relative;
+    display:inline-block;
+    max-width:100%;
+    border-radius:8px;
+    overflow:hidden;
+    line-height:0;
+    cursor:crosshair;
+    background:#1a1c22;
+  }
+  .pick-wrap img{ max-width:100%; max-height:260px; display:block; -webkit-user-drag:none; user-select:none; }
+  .pick-mark{
+    position:absolute;
+    width:16px; height:16px;
+    margin:-8px 0 0 -8px;
+    border-radius:50%;
+    border:2px solid #fff;
+    box-shadow:0 0 0 1.5px #000;
+    pointer-events:none;
+    display:none;
+  }
+  .reset-btn{
+    -webkit-appearance:none;
+    margin-top:12px;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--key);
+    background:transparent;
+    border:1px solid rgba(242,183,5,0.35);
+    border-radius:20px;
+    padding:7px 14px;
+    cursor:pointer;
+  }
+  .reset-btn:active{ background:rgba(242,183,5,0.1); }
 
   /* ---------- Control ---------- */
   .control{
@@ -311,6 +375,15 @@
     justify-content:center;
     position:relative;
   }
+  /* 透過が分かるよう、結果表示時は市松模様にする */
+  .stage.checker{
+    background:
+      linear-gradient(45deg, #d9d9d9 25%, transparent 25%) -8px 0/16px 16px,
+      linear-gradient(-45deg, #d9d9d9 25%, transparent 25%) -8px 0/16px 16px,
+      linear-gradient(45deg, transparent 75%, #d9d9d9 75%) -8px 0/16px 16px,
+      linear-gradient(-45deg, transparent 75%, #d9d9d9 75%) -8px 0/16px 16px,
+      #fff;
+  }
   .stage img{ width:100%; height:100%; object-fit:contain; display:block; }
   .stage .empty{
     color:#b9ae8f;
@@ -385,7 +458,7 @@
 
   <h1><span class="cy">本体</span> + <span class="mg">リング</span> を一枚に</h1>
   <p class="lede">
-    本体画像とリング画像をアップロードすると、その場で重ね合わせて1枚のアイコン画像を作ります。リング画像は、あらかじめ透過設定（PNGなど）がされたものをご用意ください。画像はサーバーに送信されず、この端末の中だけで処理されます。
+    本体画像とリング画像をアップロードすると、その場で重ね合わせて1枚のアイコン画像を作ります。リング画像の背景が白や黒などの単色なら、自動で透明にします（透過済みのPNGはそのまま使えます）。画像はサーバーに送信されず、この端末の中だけで処理されます。
   </p>
   <p class="lede notice">
     ご自身が権利を持つ画像、または利用許諾のある画像をお使いください。画像の利用により生じたトラブル・損害について、当ツールの提供者は一切の責任を負いかねます。
@@ -408,9 +481,34 @@
         <svg class="ph" width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.4"/><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.4"/></svg>
       </div>
       <div class="slot-label">リング画像</div>
-      <div class="slot-sub">透過PNG推奨</div>
+      <div class="slot-sub">単色背景 or 透過PNG</div>
       <input type="file" accept="image/*" id="file-ring">
     </div>
+  </div>
+
+  <div class="ring-panel" id="ring-panel" style="display:none;">
+    <div class="ring-status" id="ring-status"></div>
+    <details class="adjust" id="adjust">
+      <summary>リングの背景がうまく抜けない時</summary>
+      <div class="adjust-body">
+        <div class="control-head">
+          <span class="name">抜き具合</span>
+          <span class="val" id="tol-val">40</span>
+        </div>
+        <input type="range" id="tol" min="0" max="100" value="40">
+        <div class="control-hint">大きいほど、背景に近い色まで消えます。リング本体まで消えてしまう時は小さくしてください。</div>
+
+        <div class="control-head">
+          <span class="name">背景の色を指定</span>
+        </div>
+        <div class="pick-wrap" id="pick-wrap">
+          <img id="pick-img" alt="リング画像">
+          <div class="pick-mark" id="pick-mark"></div>
+        </div>
+        <div class="control-hint">上の画像で、消したい背景の部分をタップしてください。</div>
+        <button type="button" class="reset-btn" id="ring-reset">自動判定に戻す</button>
+      </div>
+    </details>
   </div>
 
   <div class="control disabled" id="control">
@@ -472,7 +570,7 @@
   </div>
 
   <div id="result-area" style="display:none;">
-    <p class="save-hint"><strong>画像を長押し</strong>すると「写真に保存」できます</p>
+    <p class="save-hint"><strong>画像を長押し</strong>すると「写真に保存」できます<br>※透過を保つには「ファイルに保存」がおすすめです</p>
     <div class="dl-row">
       <a href="#" download="icon.png" class="dl-link" id="dl-link">ダウンロード ↓</a>
     </div>
@@ -487,9 +585,19 @@
 
 <script>
 (function(){
-  const MAX_DIM = 2048; // 出力の上限（画質と処理速度のバランス）
+  const MAX_DIM = 2048; // 出力・リング処理の上限（画質と処理速度のバランス）
+  const TOL_DEFAULT = 40;
 
-  const state = { base: null, ring: null, offsetX: 0, offsetY: 0 }; // offset は outSize に対する割合（-0.5〜0.5想定）
+  // offset は outSize に対する割合
+  const state = {
+    base: null, ring: null, offsetX: 0, offsetY: 0,
+    urls: { base: null, ring: null },   // 選択中ファイルのURL（差し替え時に解放）
+    ringOrig: null,   // { w, h, data } リング元画像のピクセル（最大MAX_DIMに縮小）
+    ringInfo: null,   // { transparent, bg, fracNear }
+    ringProc: null,   // 背景を透明にした canvas（処理しない場合は null）
+    manual: null,     // { color, x, y } ユーザーが指定した背景色
+    outUrl: null,
+  };
   const STEP = 0.005; // 矢印1回あたりの移動量（キャンバスサイズに対する割合）
 
   const els = {
@@ -513,15 +621,27 @@
     canvasBase: document.getElementById('canvas-base'),
     canvasRing: document.getElementById('canvas-ring'),
     canvasOut: document.getElementById('canvas-out'),
+    ringPanel: document.getElementById('ring-panel'),
+    ringStatus: document.getElementById('ring-status'),
+    adjust: document.getElementById('adjust'),
+    tol: document.getElementById('tol'),
+    tolVal: document.getElementById('tol-val'),
+    pickWrap: document.getElementById('pick-wrap'),
+    pickImg: document.getElementById('pick-img'),
+    pickMark: document.getElementById('pick-mark'),
+    ringReset: document.getElementById('ring-reset'),
   };
 
   els.slotBase.addEventListener('click', () => els.fileBase.click());
   els.slotRing.addEventListener('click', () => els.fileRing.click());
+  // input自身のクリックがスロットに伝わって二重に開くのを防ぐ
+  els.fileBase.addEventListener('click', e => e.stopPropagation());
+  els.fileRing.addEventListener('click', e => e.stopPropagation());
   els.fileBase.addEventListener('change', e => handleFile(e, 'base'));
   els.fileRing.addEventListener('change', e => handleFile(e, 'ring'));
   els.scale.addEventListener('input', () => {
     els.scaleVal.textContent = els.scale.value + '%';
-    render();
+    update(false);
   });
 
   const SCALE_STEP = 1;
@@ -532,7 +652,7 @@
     v = Math.max(min, Math.min(max, v));
     els.scale.value = v;
     els.scaleVal.textContent = v + '%';
-    render();
+    update(false);
   }
 
   // btn を押し続けている間、onTick を繰り返し呼び出す（マウス/タッチ両対応、長押しで加速開始）
@@ -573,26 +693,69 @@
       state.offsetX += dx * STEP;
       state.offsetY += dy * STEP;
       updatePosLabel();
-      render();
+      update(false);
     });
   });
   els.posReset.addEventListener('click', () => {
     state.offsetX = 0;
     state.offsetY = 0;
     updatePosLabel();
-    render();
+    update(false);
   });
 
   function updatePosLabel(){
     els.posVal.textContent = 'X: ' + (state.offsetX * 100).toFixed(1) + '% / Y: ' + (state.offsetY * 100).toFixed(1) + '%';
   }
 
+  // ---------- リング背景の調整UI ----------
+  els.tol.addEventListener('input', () => {
+    els.tolVal.textContent = els.tol.value;
+    update(true);
+  });
+  els.pickImg.addEventListener('click', e => {
+    const o = state.ringOrig;
+    if(!o) return;
+    const r = els.pickImg.getBoundingClientRect();
+    const fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    const x = Math.min(o.w - 1, Math.floor(fx * o.w));
+    const y = Math.min(o.h - 1, Math.floor(fy * o.h));
+    // 周囲3×3の平均色をとる（ノイズ対策）
+    let sr = 0, sg = 0, sb = 0, n = 0;
+    for(let yy = Math.max(0, y-1); yy <= Math.min(o.h-1, y+1); yy++){
+      for(let xx = Math.max(0, x-1); xx <= Math.min(o.w-1, x+1); xx++){
+        const k = (yy * o.w + xx) * 4;
+        sr += o.data[k]; sg += o.data[k+1]; sb += o.data[k+2]; n++;
+      }
+    }
+    state.manual = { color: [sr/n, sg/n, sb/n], x: x, y: y };
+    els.pickMark.style.left = (fx * 100) + '%';
+    els.pickMark.style.top = (fy * 100) + '%';
+    els.pickMark.style.display = 'block';
+    update(true);
+  });
+  els.ringReset.addEventListener('click', () => {
+    state.manual = null;
+    els.tol.value = TOL_DEFAULT;
+    els.tolVal.textContent = TOL_DEFAULT;
+    els.pickMark.style.display = 'none';
+    update(true);
+  });
+
   function handleFile(e, role){
-    const file = e.target.files && e.target.files[0];
+    const input = e.target;
+    const file = input.files && input.files[0];
+    input.value = ''; // 同じファイルを再選択しても change が発火するようにする
     if(!file) return;
     const img = new Image();
     const url = URL.createObjectURL(file);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      alert('画像を読み込めませんでした。別の画像をお試しください。');
+    };
     img.onload = () => {
+      if(state.urls[role]) URL.revokeObjectURL(state.urls[role]); // 前の画像のURLを解放
+      state.urls[role] = url;
       state[role] = img;
       if(role === 'base'){
         state.offsetX = 0;
@@ -600,6 +763,8 @@
         els.scale.value = 100;
         els.scaleVal.textContent = '100%';
         updatePosLabel();
+      } else {
+        loadRing(img, url);
       }
       const thumb = role === 'base' ? els.thumbBase : els.thumbRing;
       thumb.innerHTML = '';
@@ -607,9 +772,180 @@
       tImg.src = url;
       thumb.appendChild(tImg);
       (role === 'base' ? els.slotBase : els.slotRing).classList.add('filled');
-      render();
+      update(role === 'ring');
     };
     img.src = url;
+  }
+
+  // ---------- リング画像の読み込みと背景判定 ----------
+  function loadRing(img, url){
+    const k = Math.min(1, MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * k));
+    const h = Math.max(1, Math.round(img.naturalHeight * k));
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+    state.ringOrig = { w: w, h: h, data: data };
+
+    // 透過済みか？（半透明以下の画素が1%以上）
+    let clear = 0, total = 0;
+    for(let i = 3; i < data.length; i += 16){ total++; if(data[i] < 128) clear++; }
+    const transparent = clear / total >= 0.01;
+
+    // 背景色の推定：外周ピクセルの最頻色
+    const buckets = new Map();
+    let bn = 0;
+    function addBorder(x, y){
+      const j = (y * w + x) * 4;
+      const key = ((data[j] >> 3) << 10) | ((data[j+1] >> 3) << 5) | (data[j+2] >> 3);
+      let b = buckets.get(key);
+      if(!b){ b = [0, 0, 0, 0]; buckets.set(key, b); }
+      b[0]++; b[1] += data[j]; b[2] += data[j+1]; b[3] += data[j+2];
+      bn++;
+    }
+    for(let x = 0; x < w; x++){ addBorder(x, 0); addBorder(x, h-1); }
+    for(let y = 1; y < h-1; y++){ addBorder(0, y); addBorder(w-1, y); }
+    let best = null;
+    buckets.forEach(b => { if(!best || b[0] > best[0]) best = b; });
+    const bg = [best[1]/best[0], best[2]/best[0], best[3]/best[0]];
+
+    // 外周のうち背景色に近い割合（低ければ単色背景ではない）
+    let near = 0;
+    function chk(x, y){
+      const j = (y * w + x) * 4;
+      if(dist(data, j, bg) <= 24) near++;
+    }
+    for(let x = 0; x < w; x++){ chk(x, 0); chk(x, h-1); }
+    for(let y = 1; y < h-1; y++){ chk(0, y); chk(w-1, y); }
+
+    state.ringInfo = { transparent: transparent, bg: bg, fracNear: near / bn };
+
+    // 調整UIを初期状態に戻す
+    state.manual = null;
+    els.tol.value = TOL_DEFAULT;
+    els.tolVal.textContent = TOL_DEFAULT;
+    els.pickMark.style.display = 'none';
+    els.pickImg.src = url;
+    els.adjust.open = false;
+  }
+
+  function dist(d, j, c){
+    const dr = d[j] - c[0], dg = d[j+1] - c[1], db = d[j+2] - c[2];
+    return Math.sqrt((dr*dr + dg*dg + db*db) / 3);
+  }
+
+  function setStatus(text, kind){
+    els.ringPanel.style.display = 'block';
+    els.ringStatus.textContent = text;
+    els.ringStatus.className = 'ring-status ' + (kind || '');
+  }
+
+  // ---------- 背景を透明にする（色→透明変換 + 背景とつながった部分のみ） ----------
+  function processRing(){
+    state.ringProc = null;
+    const o = state.ringOrig, info = state.ringInfo;
+    if(!o || !info) return;
+    const manual = state.manual;
+
+    if(info.transparent && !manual){
+      els.adjust.style.display = 'none';
+      setStatus('透過済みの画像として、そのまま使います。', 'ok');
+      return;
+    }
+    els.adjust.style.display = '';
+
+    if(!manual && info.fracNear < 0.85){
+      setStatus('背景が単色ではないため、自動で透過できません。透過済みのPNGをご用意ください。背景の色が分かる場合は、下の「うまくいかない時」から色を指定できます。', 'warn');
+      return;
+    }
+
+    const w = o.w, h = o.h, src = o.data, N = w * h;
+    const bg = manual ? manual.color : info.bg;
+    const s = parseInt(els.tol.value, 10);
+    const lo = s * 0.4;                    // これ以下は完全に透明
+    const hi = lo + Math.max(12, lo * 0.8); // これ以上は不透明（間は半透明）
+
+    // 1) 背景色に近い画素のマスク
+    const mask = new Uint8Array(N);
+    for(let i = 0; i < N; i++){
+      if(dist(src, i*4, bg) < hi) mask[i] = 1;
+    }
+
+    // 2) 外周・中央・指定位置から、つながった背景を塗りつぶし（0=未到達 1=背景領域）
+    const lv = new Uint8Array(N);
+    const stack = new Int32Array(N);
+    let sp = 0;
+    function seed(x, y){
+      const i = y * w + x;
+      if(mask[i] && !lv[i]){ lv[i] = 1; stack[sp++] = i; }
+    }
+    for(let x = 0; x < w; x++){ seed(x, 0); seed(x, h-1); }
+    for(let y = 0; y < h; y++){ seed(0, y); seed(w-1, y); }
+    // 中央付近（リングの内側の穴）
+    const cx = w >> 1, cy = h >> 1, r = Math.max(2, Math.round(Math.min(w, h) * 0.02));
+    for(let yy = cy - r; yy <= cy + r; yy += 2){
+      for(let xx = cx - r; xx <= cx + r; xx += 2) seed(xx, yy);
+    }
+    if(manual) seed(manual.x, manual.y);
+    while(sp > 0){
+      const i = stack[--sp];
+      const x = i % w, y = (i / w) | 0;
+      if(x > 0)   { const n = i - 1; if(mask[n] && !lv[n]){ lv[n] = 1; stack[sp++] = n; } }
+      if(x < w-1) { const n = i + 1; if(mask[n] && !lv[n]){ lv[n] = 1; stack[sp++] = n; } }
+      if(y > 0)   { const n = i - w; if(mask[n] && !lv[n]){ lv[n] = 1; stack[sp++] = n; } }
+      if(y < h-1) { const n = i + w; if(mask[n] && !lv[n]){ lv[n] = 1; stack[sp++] = n; } }
+    }
+
+    // 3) 背景領域の外側3pxを調べ、縁の色から「白フチ（にじみ）」除去の基準距離を決める
+    let cur = [];
+    for(let i = 0; i < N; i++) if(lv[i] === 1) cur.push(i);
+    const removedCount = cur.length;
+    let outer = [];
+    for(let step = 2; step <= 4; step++){
+      const next = [];
+      for(let a = 0; a < cur.length; a++){
+        const i = cur[a];
+        const x = i % w, y = (i / w) | 0;
+        let n;
+        if(x > 0)   { n = i - 1; if(!lv[n]){ lv[n] = step; next.push(n); } }
+        if(x < w-1) { n = i + 1; if(!lv[n]){ lv[n] = step; next.push(n); } }
+        if(y > 0)   { n = i - w; if(!lv[n]){ lv[n] = step; next.push(n); } }
+        if(y < h-1) { n = i + w; if(!lv[n]){ lv[n] = step; next.push(n); } }
+      }
+      cur = next;
+    }
+    const ds = [];
+    for(let a = 0; a < cur.length; a += 3) ds.push(dist(src, cur[a]*4, bg));
+    ds.sort((p, q) => p - q);
+    const ring = ds.length ? ds[ds.length >> 1] : hi;
+    const full = Math.min(220, Math.max(hi, ring)); // この距離で完全に不透明
+
+    if(removedCount / N < 0.005){
+      setStatus('背景を検出できませんでした。下の「うまくいかない時」から背景の色を指定してください。', 'warn');
+      return;
+    }
+
+    // 4) 色→透明変換（縁は半透明にし、背景色のにじみを取り除く）
+    const out = new Uint8ClampedArray(src);
+    for(let i = 0; i < N; i++){
+      if(lv[i] < 1 || lv[i] > 3) continue;
+      const j = i * 4;
+      const d = dist(src, j, bg);
+      if(d >= full) continue;
+      if(d <= lo){ out[j+3] = 0; continue; }
+      const a = (d - lo) / (full - lo);
+      out[j]   = Math.max(0, Math.min(255, (src[j]   - bg[0] * (1 - a)) / a));
+      out[j+1] = Math.max(0, Math.min(255, (src[j+1] - bg[1] * (1 - a)) / a));
+      out[j+2] = Math.max(0, Math.min(255, (src[j+2] - bg[2] * (1 - a)) / a));
+      out[j+3] = Math.round(src[j+3] * a);
+    }
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').putImageData(new ImageData(out, w, h), 0, 0);
+    state.ringProc = c;
+    setStatus(manual ? '指定した色を、透明にしました。' : '背景を自動で透明にしました。', 'ok');
   }
 
   // 中央基準で正方形にフィットさせる（object-fit: cover 相当）。
@@ -619,9 +955,11 @@
     zoom = zoom || 1;
     offsetX = offsetX || 0;
     offsetY = offsetY || 0;
-    const side = Math.min(img.naturalWidth, img.naturalHeight);
-    const sx = (img.naturalWidth - side) / 2;
-    const sy = (img.naturalHeight - side) / 2;
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    const side = Math.min(iw, ih);
+    const sx = (iw - side) / 2;
+    const sy = (ih - side) / 2;
 
     const destSize = outSize * zoom;
     const dx = (outSize - destSize) / 2 + offsetX * outSize;
@@ -631,48 +969,69 @@
     ctx.drawImage(img, sx, sy, side, side, dx, dy, destSize, destSize);
   }
 
+  // 連続操作（スライダー・矢印）をまとめて、1フレームに1回だけ再描画する
+  let pending = false, needProc = false, renderSeq = 0;
+  function update(proc){
+    if(proc) needProc = true;
+    if(pending) return;
+    pending = true;
+    requestAnimationFrame(() => {
+      pending = false;
+      if(needProc){ needProc = false; processRing(); }
+      render();
+    });
+  }
+
   function render(){
     if(!state.base || !state.ring) return;
 
     els.control.classList.remove('disabled');
-    els.stage.innerHTML = '<div class="spinner"></div>';
+    if(!els.stage.querySelector('img')){
+      els.stage.innerHTML = '<div class="spinner"></div>';
+    }
 
-    // 少し遅延させて描画（大きな写真でもスピナーが見えるように）
-    requestAnimationFrame(() => {
-      const base = state.base, ring = state.ring;
+    const base = state.base, ring = state.ring;
 
-      // 出力サイズ：両画像の短辺のうち小さい方を基準に、上限を掛ける
-      const baseSide = Math.min(base.naturalWidth, base.naturalHeight);
-      const ringSide = Math.min(ring.naturalWidth, ring.naturalHeight);
-      const outSize = Math.min(Math.max(baseSide, ringSide), MAX_DIM);
+    // 出力サイズ：両画像の短辺のうち大きい方を基準に、上限を掛ける
+    const baseSide = Math.min(base.naturalWidth, base.naturalHeight);
+    const ringSide = Math.min(ring.naturalWidth, ring.naturalHeight);
+    const outSize = Math.min(Math.max(baseSide, ringSide), MAX_DIM);
 
-      [els.canvasBase, els.canvasRing, els.canvasOut].forEach(c => {
-        c.width = outSize; c.height = outSize;
-      });
+    [els.canvasBase, els.canvasRing, els.canvasOut].forEach(c => {
+      c.width = outSize; c.height = outSize;
+    });
 
-      const ctxBase = els.canvasBase.getContext('2d');
-      const ctxRing = els.canvasRing.getContext('2d');
-      const ctxOut = els.canvasOut.getContext('2d');
+    const ctxBase = els.canvasBase.getContext('2d');
+    const ctxRing = els.canvasRing.getContext('2d');
+    const ctxOut = els.canvasOut.getContext('2d');
 
-      const baseZoom = parseInt(els.scale.value, 10) / 100;
-      drawCover(ctxBase, base, outSize, baseZoom, state.offsetX, state.offsetY);
-      drawCover(ctxRing, ring, outSize, 1, 0, 0);
+    const baseZoom = parseInt(els.scale.value, 10) / 100;
+    drawCover(ctxBase, base, outSize, baseZoom, state.offsetX, state.offsetY);
+    drawCover(ctxRing, state.ringProc || ring, outSize, 1, 0, 0);
 
-      // 合成：本体 → リング（リング画像はアップロード時点で透過設定済みの前提）
-      ctxOut.clearRect(0,0,outSize,outSize);
-      ctxOut.drawImage(els.canvasBase, 0, 0);
-      ctxOut.drawImage(els.canvasRing, 0, 0);
+    // 合成：本体 → リング（背景を透明にしたリング、または透過済みのリング）
+    ctxOut.clearRect(0,0,outSize,outSize);
+    ctxOut.drawImage(els.canvasBase, 0, 0);
+    ctxOut.drawImage(els.canvasRing, 0, 0);
 
-      const dataUrl = els.canvasOut.toDataURL('image/png');
-      els.stage.innerHTML = '';
-      const outImg = document.createElement('img');
-      outImg.src = dataUrl;
-      els.stage.appendChild(outImg);
-
+    const seq = ++renderSeq;
+    els.canvasOut.toBlob(blob => {
+      if(seq !== renderSeq || !blob) return; // 古い描画結果は捨てる
+      const oldUrl = state.outUrl;
+      state.outUrl = URL.createObjectURL(blob);
+      let outImg = els.stage.querySelector('img');
+      if(!outImg){
+        els.stage.innerHTML = '';
+        outImg = document.createElement('img');
+        els.stage.appendChild(outImg);
+      }
+      els.stage.classList.add('checker');
+      outImg.src = state.outUrl;
       els.dimLabel.textContent = outSize + ' × ' + outSize + ' PX';
       els.resultArea.style.display = 'block';
-      els.dlLink.href = dataUrl;
-    });
+      els.dlLink.href = state.outUrl;
+      if(oldUrl) URL.revokeObjectURL(oldUrl);
+    }, 'image/png');
   }
 })();
 </script>
