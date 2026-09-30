@@ -319,6 +319,24 @@ canvas{ display:none; }
     </div>
   </div>
 
+  <div class="control disabled" id="ring-control">
+    <div class="control-head">
+      <span class="name">リングの拡大率</span>
+      <span class="val" id="ring-scale-val">100%</span>
+    </div>
+    <div class="slider-row">
+      <button class="step-btn" id="ring-scale-down" aria-label="リングを縮小">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L7 12l8 7V5z" fill="currentColor"/></svg>
+      </button>
+      <input type="range" id="ring-scale" min="50" max="150" value="100">
+      <button class="step-btn" id="ring-scale-up" aria-label="リングを拡大">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l8 7-8 7V5z" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="control-hint">リング画像の大きさを調整します。100%より上げるとリングの外側が見切れ、下げると周囲が透明になります。</div>
+    <button type="button" class="reset-btn" id="ring-scale-reset">100%に戻す</button>
+  </div>
+
   <div class="table-wrap">
     <div class="reg-label">
       <span>PREVIEW</span>
@@ -399,6 +417,12 @@ canvas{ display:none; }
     pickImg: document.getElementById('pick-img'),
     pickMark: document.getElementById('pick-mark'),
     ringReset: document.getElementById('ring-reset'),
+    ringControl: document.getElementById('ring-control'),
+    ringScale: document.getElementById('ring-scale'),
+    ringScaleVal: document.getElementById('ring-scale-val'),
+    ringScaleDown: document.getElementById('ring-scale-down'),
+    ringScaleUp: document.getElementById('ring-scale-up'),
+    ringScaleReset: document.getElementById('ring-scale-reset'),
   };
 
   els.slotBase.addEventListener('click', () => els.fileBase.click());
@@ -454,6 +478,22 @@ canvas{ display:none; }
   }
   setupHold(els.scaleDown, () => nudgeScale(-SCALE_STEP));
   setupHold(els.scaleUp, () => nudgeScale(SCALE_STEP));
+
+  // ---------- リングの拡大率 ----------
+  function setRingScale(v){
+    const min = parseInt(els.ringScale.min, 10);
+    const max = parseInt(els.ringScale.max, 10);
+    v = Math.max(min, Math.min(max, v));
+    els.ringScale.value = v;
+    els.ringScaleVal.textContent = v + '%';
+  }
+  els.ringScale.addEventListener('input', () => {
+    els.ringScaleVal.textContent = els.ringScale.value + '%';
+    update(false);
+  });
+  setupHold(els.ringScaleDown, () => { setRingScale(parseInt(els.ringScale.value, 10) - 1); update(false); });
+  setupHold(els.ringScaleUp, () => { setRingScale(parseInt(els.ringScale.value, 10) + 1); update(false); });
+  els.ringScaleReset.addEventListener('click', () => { setRingScale(100); update(false); });
 
   document.querySelectorAll('.dpad button[data-dx]').forEach(btn => {
     const dx = parseFloat(btn.dataset.dx);
@@ -592,6 +632,7 @@ canvas{ display:none; }
     state.ringInfo = { transparent: transparent, bg: bg, fracNear: near / bn };
 
     // 調整UIを初期状態に戻す
+    setRingScale(100); // 新しいリングを選んだら拡大率も100%に戻す
     state.manual = null;
     els.tol.value = TOL_DEFAULT;
     els.tolVal.textContent = TOL_DEFAULT;
@@ -755,6 +796,7 @@ canvas{ display:none; }
     if(!state.base || !state.ring) return;
 
     els.control.classList.remove('disabled');
+    els.ringControl.classList.remove('disabled');
     if(!els.stage.querySelector('img')){
       els.stage.innerHTML = '<div class="spinner"></div>';
     }
@@ -776,7 +818,8 @@ canvas{ display:none; }
 
     const baseZoom = parseInt(els.scale.value, 10) / 100;
     drawCover(ctxBase, base, outSize, baseZoom, state.offsetX, state.offsetY);
-    drawCover(ctxRing, state.ringProc || ring, outSize, 1, 0, 0);
+    const ringZoom = parseInt(els.ringScale.value, 10) / 100;
+    drawCover(ctxRing, state.ringProc || ring, outSize, ringZoom, 0, 0);
 
     // 合成：本体 → リング（背景を透明にしたリング、または透過済みのリング）
     ctxOut.clearRect(0,0,outSize,outSize);
