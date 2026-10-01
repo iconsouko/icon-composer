@@ -213,6 +213,56 @@ canvas{ display:none; }
   .slots{ gap:8px; }
   header h1{ font-size:22px; }
 }
+
+/* ---------- Sticky preview & tabs ---------- */
+.sticky-preview{ margin:0 -24px; padding:0 24px 10px; }
+.sticky-preview.live{
+  position:sticky; top:0; z-index:50;
+  padding-top:env(safe-area-inset-top,0px);
+  background:rgb(var(--ink));
+  box-shadow:0 10px 14px -10px rgba(0,0,0,.28);
+}
+.table-wrap{ margin-bottom:0; }
+.lighttable{ padding:20px; }
+.reg-mark{ width:12px; height:12px; }
+.reg-mark.tl{ top:5px; left:5px; } .reg-mark.tr{ top:5px; right:5px; }
+.reg-mark.bl{ bottom:5px; left:5px; } .reg-mark.br{ bottom:5px; right:5px; }
+.stage{ max-width:min(340px,30vh); }
+.stage{ max-width:min(340px,30dvh); }
+.reg-label .dim{ margin-left:auto; }
+.dl-mini{
+  margin-left:12px; font-size:11px; font-weight:700; text-decoration:none; letter-spacing:.02em;
+  color:rgb(var(--teal-t)); border:2px solid rgb(var(--teal)/.4); background:rgb(var(--teal)/.1);
+  padding:3px 12px; border-radius:999px;
+}
+.tabs{ display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-bottom:16px; }
+.tab{
+  -webkit-appearance:none; font:inherit; color:rgb(var(--paper)); text-align:center; cursor:pointer;
+  background:transparent; border:2px solid rgb(var(--line)); border-radius:12px; padding:8px 4px; min-width:0;
+}
+.tab-name{ display:flex; align-items:center; justify-content:center; gap:5px; font-size:12.5px; font-weight:700; white-space:nowrap; }
+.tab-sub{ display:block; margin-top:2px; font-size:10.5px; color:rgb(var(--muted)); white-space:nowrap; }
+.tdot{ width:7px; height:7px; border-radius:50%; background:rgb(var(--muted)); flex-shrink:0; }
+.tab[data-tab="base"] .tdot{ background:rgb(var(--teal)); }
+.tab[data-tab="ring"] .tdot{ background:rgb(var(--coral)); }
+.tab[data-tab="bg"] .tdot{ background:rgb(var(--gold)); }
+.tab.active[data-tab="base"]{ border-color:rgb(var(--teal)); background:rgb(var(--teal)/.1); }
+.tab.active[data-tab="ring"]{ border-color:rgb(var(--coral)); background:rgb(var(--coral)/.1); }
+.tab.active[data-tab="bg"]{ border-color:rgb(var(--gold)); background:rgb(var(--gold)/.1); }
+.tabpanel{ display:none; }
+.tabpanel.active{ display:block; }
+.tabpanel .ring-panel{ border:0; padding:0; margin:0; background:transparent; }
+.tabpanel .ring-status{ border-left-width:3px; }
+
+.stage{ max-width:min(340px,26vh); }
+.stage{ max-width:min(340px,26dvh); }
+.lighttable{ padding:14px; }
+.reg-mark{ width:9px; height:9px; }
+.reg-mark.tl{ top:3px; left:3px; } .reg-mark.tr{ top:3px; right:3px; }
+.reg-mark.bl{ bottom:3px; left:3px; } .reg-mark.br{ bottom:3px; right:3px; }
+.sticky-preview .tabs{ margin:10px 0 0; }
+.sticky-preview:not(.live) .tabs{ opacity:.4; pointer-events:none; }
+.tab{ padding:6px 4px; }
 </style>
 </head>
 <body>
@@ -252,103 +302,96 @@ canvas{ display:none; }
     </div>
   </div>
 
-  <div class="ring-panel" id="ring-panel" style="display:none;">
-    <div class="ring-status" id="ring-status"></div>
-    <details class="adjust" id="adjust">
-      <summary>リングの背景がうまく抜けない時</summary>
-      <div class="adjust-body">
-        <div class="control-head">
-          <span class="name">抜き具合</span>
-          <span class="val" id="tol-val">40</span>
-        </div>
-        <input type="range" id="tol" min="0" max="100" value="40">
-        <div class="control-hint">大きいほど、背景に近い色まで消えます。リング本体まで消えてしまう時は小さくしてください。</div>
-
-        <div class="control-head">
-          <span class="name">背景の色を指定</span>
-        </div>
-        <div class="pick-wrap" id="pick-wrap">
-          <img id="pick-img" alt="リング画像">
-          <div class="pick-mark" id="pick-mark"></div>
-        </div>
-        <div class="control-hint">上の画像で、消したい背景の部分をタップしてください。</div>
-        <button type="button" class="reset-btn" id="ring-reset">自動判定に戻す</button>
+  <div class="sticky-preview" id="sticky">
+    <div class="table-wrap">
+      <div class="reg-label">
+        <span>PREVIEW</span>
+        <span class="dim" id="dim-label">—</span>
+        <a href="#" download="icon.png" class="dl-mini" id="dl-mini" style="display:none;">保存 ↓</a>
       </div>
-    </details>
+      <div class="lighttable">
+        <div class="reg-mark tl"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
+        <div class="reg-mark tr"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
+        <div class="reg-mark bl"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
+        <div class="reg-mark br"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
+        <div class="stage" id="stage">
+          <div class="empty">本体とリングの<br>両方をアップロードすると<br>ここにプレビューが表示されます</div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" data-tab="base" role="tab"><span class="tab-name"><i class="tdot"></i>本体</span><span class="tab-sub" id="sub-base">100%</span></button>
+      <button type="button" class="tab" data-tab="ring" role="tab"><span class="tab-name"><i class="tdot"></i>リング</span><span class="tab-sub" id="sub-ring">100%</span></button>
+      <button type="button" class="tab" data-tab="bg" role="tab"><span class="tab-name"><i class="tdot"></i>背景透過</span><span class="tab-sub" id="sub-bg">—</span></button>
+    </div>
   </div>
 
   <div class="control disabled" id="control">
-    <div class="control-head">
-      <span class="name">ベースの拡大率</span>
-      <span class="val" id="scale-val">100%</span>
-    </div>
-    <div class="slider-row">
-      <button class="step-btn" id="scale-down" aria-label="縮小">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L7 12l8 7V5z" fill="currentColor"/></svg>
-      </button>
-      <input type="range" id="scale" min="50" max="150" value="100">
-      <button class="step-btn" id="scale-up" aria-label="拡大">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l8 7-8 7V5z" fill="currentColor"/></svg>
-      </button>
-    </div>
-    <div class="control-hint">本体画像を拡大・縮小して、リングの中に見える範囲を調整します。100%より上げると被写体が大きく、下げると小さく（周囲は透明）表示されます。</div>
-
-    <div class="dpad-row">
-      <div class="dpad">
-        <button class="cell-up" data-dx="0" data-dy="-1" aria-label="上に移動">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 5l7 8H5l7-8z" fill="currentColor"/></svg>
-        </button>
-        <button class="cell-left" data-dx="-1" data-dy="0" aria-label="左に移動">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M5 12l8-7v14l-8-7z" fill="currentColor"/></svg>
-        </button>
-        <button class="cell-reset" id="pos-reset" aria-label="位置をリセット">
-          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="1.6"/></svg>
-        </button>
-        <button class="cell-right" data-dx="1" data-dy="0" aria-label="右に移動">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M19 12l-8 7V5l8 7z" fill="currentColor"/></svg>
-        </button>
-        <button class="cell-down" data-dx="0" data-dy="1" aria-label="下に移動">
-          <svg viewBox="0 0 24 24" fill="none"><path d="M12 19l-7-8h14l-7 8z" fill="currentColor"/></svg>
-        </button>
+    <div class="tabpanel active" data-panel="base">
+      <div class="control-head"><span class="name">本体の拡大率</span><span class="val" id="scale-val">100%</span></div>
+      <div class="slider-row">
+        <button class="step-btn" id="scale-down" aria-label="縮小"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5L7 12l8 7V5z" fill="currentColor"/></svg></button>
+        <input type="range" id="scale" min="50" max="150" value="100">
+        <button class="step-btn" id="scale-up" aria-label="拡大"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l8 7-8 7V5z" fill="currentColor"/></svg></button>
       </div>
-      <div class="dpad-info">
-        <div class="name">ベースの位置</div>
-        <div class="val" id="pos-val">X: 0% / Y: 0%</div>
-        <div class="hint">矢印で本体画像の位置を少しずつ微調整できます。中央のボタンでリセットします。</div>
+      <div class="control-hint">100%より上げると被写体が大きく、下げると小さく（周囲は透明）表示されます。</div>
+      <div class="dpad-row">
+        <div class="dpad">
+          <button class="cell-up" data-dx="0" data-dy="-1" aria-label="上に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5l7 8H5l7-8z" fill="currentColor"/></svg></button>
+          <button class="cell-left" data-dx="-1" data-dy="0" aria-label="左に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l8-7v14l-8-7z" fill="currentColor"/></svg></button>
+          <button class="cell-reset" id="pos-reset" aria-label="位置をリセット"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          <button class="cell-right" data-dx="1" data-dy="0" aria-label="右に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M19 12l-8 7V5l8 7z" fill="currentColor"/></svg></button>
+          <button class="cell-down" data-dx="0" data-dy="1" aria-label="下に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M12 19l-7-8h14l-7 8z" fill="currentColor"/></svg></button>
+        </div>
+        <div class="dpad-info">
+          <div class="name">位置</div>
+          <div class="val" id="pos-val">X: 0% / Y: 0%</div>
+          <div class="hint">矢印で少しずつ移動。中央のボタンでリセット。</div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="control disabled" id="ring-control">
-    <div class="control-head">
-      <span class="name">リングの拡大率</span>
-      <span class="val" id="ring-scale-val">100%</span>
+    <div class="tabpanel" data-panel="ring" id="ring-control">
+      <div class="control-head"><span class="name">リングの拡大率</span><span class="val" id="ring-scale-val">100%</span></div>
+      <div class="slider-row">
+        <button class="step-btn" id="ring-scale-down" aria-label="縮小"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5L7 12l8 7V5z" fill="currentColor"/></svg></button>
+        <input type="range" id="ring-scale" min="50" max="150" value="100">
+        <button class="step-btn" id="ring-scale-up" aria-label="拡大"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l8 7-8 7V5z" fill="currentColor"/></svg></button>
+      </div>
+      <div class="control-hint">100%より上げるとリングの外側が見切れ、下げるとリングが小さくなって、外側は本体画像がそのまま見えます。</div>
+      <div class="dpad-row">
+        <div class="dpad">
+          <button class="cell-up" data-rdx="0" data-rdy="-1" aria-label="上に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5l7 8H5l7-8z" fill="currentColor"/></svg></button>
+          <button class="cell-left" data-rdx="-1" data-rdy="0" aria-label="左に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l8-7v14l-8-7z" fill="currentColor"/></svg></button>
+          <button class="cell-reset" id="ring-pos-reset" aria-label="位置をリセット"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v10M7 12h10" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          <button class="cell-right" data-rdx="1" data-rdy="0" aria-label="右に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M19 12l-8 7V5l8 7z" fill="currentColor"/></svg></button>
+          <button class="cell-down" data-rdx="0" data-rdy="1" aria-label="下に移動"><svg viewBox="0 0 24 24" fill="none"><path d="M12 19l-7-8h14l-7 8z" fill="currentColor"/></svg></button>
+        </div>
+        <div class="dpad-info">
+          <div class="name">位置</div>
+          <div class="val" id="ring-pos-val">X: 0% / Y: 0%</div>
+          <div class="hint">矢印で少しずつ移動。中央のボタンでリセット。</div>
+        </div>
+      </div>
+      <button type="button" class="reset-btn" id="ring-scale-reset">拡大率を100%に戻す</button>
     </div>
-    <div class="slider-row">
-      <button class="step-btn" id="ring-scale-down" aria-label="リングを縮小">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M15 5L7 12l8 7V5z" fill="currentColor"/></svg>
-      </button>
-      <input type="range" id="ring-scale" min="50" max="150" value="100">
-      <button class="step-btn" id="ring-scale-up" aria-label="リングを拡大">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M9 5l8 7-8 7V5z" fill="currentColor"/></svg>
-      </button>
-    </div>
-    <div class="control-hint">リング画像の大きさを調整します。</div>
-    <button type="button" class="reset-btn" id="ring-scale-reset">100%に戻す</button>
-  </div>
 
-  <div class="table-wrap">
-    <div class="reg-label">
-      <span>PREVIEW</span>
-      <span class="dim" id="dim-label">—</span>
-    </div>
-    <div class="lighttable">
-      <div class="reg-mark tl"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
-      <div class="reg-mark tr"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
-      <div class="reg-mark bl"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
-      <div class="reg-mark br"><svg viewBox="0 0 18 18"><path d="M9 0V18M0 9H18" stroke="#8d7f52" stroke-width="1"/></svg></div>
-      <div class="stage" id="stage">
-        <div class="empty">本体とリングの<br>両方をアップロードすると<br>ここにプレビューが表示されます</div>
+    <div class="tabpanel" data-panel="bg">
+      <p class="control-hint" id="bg-empty" style="margin:0;">リング画像を選ぶと、ここで背景の透過を調整できます。</p>
+      <div class="ring-panel" id="ring-panel" style="display:none;">
+        <div class="ring-status" id="ring-status"></div>
+        <details class="adjust" id="adjust">
+          <summary>リングの背景がうまく抜けない時</summary>
+          <div class="adjust-body">
+            <div class="control-head"><span class="name">抜き具合</span><span class="val" id="tol-val">40</span></div>
+            <input type="range" id="tol" min="0" max="100" value="40">
+            <div class="control-hint">大きいほど、背景に近い色まで消えます。リング本体まで消えてしまう時は小さくしてください。</div>
+            <div class="control-head"><span class="name">背景の色を指定</span></div>
+            <div class="pick-wrap" id="pick-wrap"><img id="pick-img" alt="リング画像"><div class="pick-mark" id="pick-mark"></div></div>
+            <div class="control-hint">上の画像で、消したい背景の部分をタップしてください。</div>
+            <button type="button" class="reset-btn" id="ring-reset">自動判定に戻す</button>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -377,7 +420,7 @@ canvas{ display:none; }
 
   // offset は outSize に対する割合
   const state = {
-    base: null, ring: null, offsetX: 0, offsetY: 0,
+    base: null, ring: null, offsetX: 0, offsetY: 0, ringOffsetX: 0, ringOffsetY: 0,
     urls: { base: null, ring: null },   // 選択中ファイルのURL（差し替え時に解放）
     ringOrig: null,   // { w, h, data } リング元画像のピクセル（最大MAX_DIMに縮小）
     ringInfo: null,   // { transparent, bg, fracNear }
@@ -423,6 +466,14 @@ canvas{ display:none; }
     ringScaleDown: document.getElementById('ring-scale-down'),
     ringScaleUp: document.getElementById('ring-scale-up'),
     ringScaleReset: document.getElementById('ring-scale-reset'),
+    ringPosVal: document.getElementById('ring-pos-val'),
+    ringPosReset: document.getElementById('ring-pos-reset'),
+    subBase: document.getElementById('sub-base'),
+    subRing: document.getElementById('sub-ring'),
+    subBg: document.getElementById('sub-bg'),
+    bgEmpty: document.getElementById('bg-empty'),
+    dlMini: document.getElementById('dl-mini'),
+    sticky: document.getElementById('sticky'),
   };
 
   els.slotBase.addEventListener('click', () => els.fileBase.click());
@@ -494,6 +545,41 @@ canvas{ display:none; }
   setupHold(els.ringScaleDown, () => { setRingScale(parseInt(els.ringScale.value, 10) - 1); update(false); });
   setupHold(els.ringScaleUp, () => { setRingScale(parseInt(els.ringScale.value, 10) + 1); update(false); });
   els.ringScaleReset.addEventListener('click', () => { setRingScale(100); update(false); });
+
+  // リングの位置（矢印）
+  document.querySelectorAll('.dpad button[data-rdx]').forEach(btn => {
+    const dx = parseFloat(btn.dataset.rdx);
+    const dy = parseFloat(btn.dataset.rdy);
+    setupHold(btn, () => {
+      state.ringOffsetX += dx * STEP;
+      state.ringOffsetY += dy * STEP;
+      updateRingPosLabel();
+      update(false);
+    });
+  });
+  els.ringPosReset.addEventListener('click', () => {
+    state.ringOffsetX = 0;
+    state.ringOffsetY = 0;
+    updateRingPosLabel();
+    update(false);
+  });
+  function updateRingPosLabel(){
+    els.ringPosVal.textContent = 'X: ' + (state.ringOffsetX * 100).toFixed(1) + '% / Y: ' + (state.ringOffsetY * 100).toFixed(1) + '%';
+  }
+
+  // タブ切り替え（本体 / リング / 背景透過）
+  function selectTab(name){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.querySelectorAll('.tabpanel').forEach(p => p.classList.toggle('active', p.dataset.panel === name));
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => selectTab(t.dataset.tab)));
+
+  // タブ下の小さな現在値表示
+  function refreshSubs(){
+    const mv = (x, y) => (Math.abs(x) > 1e-9 || Math.abs(y) > 1e-9) ? ' · 移動' : '';
+    els.subBase.textContent = els.scale.value + '%' + mv(state.offsetX, state.offsetY);
+    els.subRing.textContent = els.ringScale.value + '%' + mv(state.ringOffsetX, state.ringOffsetY);
+  }
 
   document.querySelectorAll('.dpad button[data-dx]').forEach(btn => {
     const dx = parseFloat(btn.dataset.dx);
@@ -632,7 +718,10 @@ canvas{ display:none; }
     state.ringInfo = { transparent: transparent, bg: bg, fracNear: near / bn };
 
     // 調整UIを初期状態に戻す
-    setRingScale(100); // 新しいリングを選んだら拡大率も100%に戻す
+    setRingScale(100); // 新しいリングを選んだら拡大率・位置も元に戻す
+    state.ringOffsetX = 0;
+    state.ringOffsetY = 0;
+    updateRingPosLabel();
     state.manual = null;
     els.tol.value = TOL_DEFAULT;
     els.tolVal.textContent = TOL_DEFAULT;
@@ -646,10 +735,13 @@ canvas{ display:none; }
     return Math.sqrt((dr*dr + dg*dg + db*db) / 3);
   }
 
-  function setStatus(text, kind){
+  function setStatus(text, kind, short){
     els.ringPanel.style.display = 'block';
+    els.bgEmpty.style.display = 'none';
     els.ringStatus.textContent = text;
     els.ringStatus.className = 'ring-status ' + (kind || '');
+    els.subBg.textContent = short || '—';
+    if(kind === 'warn'){ els.adjust.open = true; selectTab('bg'); } // 要対応の時は該当タブを開く
   }
 
   // ---------- 背景を透明にする（色→透明変換 + 背景とつながった部分のみ） ----------
@@ -661,13 +753,13 @@ canvas{ display:none; }
 
     if(info.transparent && !manual){
       els.adjust.style.display = 'none';
-      setStatus('透過済みの画像として、そのまま使います。', 'ok');
+      setStatus('透過済みの画像として、そのまま使います。', 'ok', '透過済み');
       return;
     }
     els.adjust.style.display = '';
 
     if(!manual && info.fracNear < 0.85){
-      setStatus('背景が単色ではないため、自動で透過できません。透過済みのPNGをご用意ください。背景の色が分かる場合は、下の「うまくいかない時」から色を指定できます。', 'warn');
+      setStatus('背景が単色ではないため、自動で透過できません。透過済みのPNGをご用意ください。背景の色が分かる場合は、下の「うまくいかない時」から色を指定できます。', 'warn', '要確認');
       return;
     }
 
@@ -733,7 +825,7 @@ canvas{ display:none; }
     const full = Math.min(220, Math.max(hi, ring)); // この距離で完全に不透明
 
     if(removedCount / N < 0.005){
-      setStatus('背景を検出できませんでした。下の「うまくいかない時」から背景の色を指定してください。', 'warn');
+      setStatus('背景を検出できませんでした。下の「うまくいかない時」から背景の色を指定してください。', 'warn', '要確認');
       return;
     }
 
@@ -755,7 +847,7 @@ canvas{ display:none; }
     c.width = w; c.height = h;
     c.getContext('2d').putImageData(new ImageData(out, w, h), 0, 0);
     state.ringProc = c;
-    setStatus(manual ? '指定した色を、透明にしました。' : '背景を自動で透明にしました。', 'ok');
+    setStatus(manual ? '指定した色を、透明にしました。' : '背景を自動で透明にしました。', 'ok', manual ? '手動' : '自動');
   }
 
   // 中央基準で正方形にフィットさせる（object-fit: cover 相当）。
@@ -782,6 +874,7 @@ canvas{ display:none; }
   // 連続操作（スライダー・矢印）をまとめて、1フレームに1回だけ再描画する
   let pending = false, needProc = false, renderSeq = 0;
   function update(proc){
+    refreshSubs();
     if(proc) needProc = true;
     if(pending) return;
     pending = true;
@@ -797,6 +890,7 @@ canvas{ display:none; }
 
     els.control.classList.remove('disabled');
     els.ringControl.classList.remove('disabled');
+    els.sticky.classList.add('live');
     if(!els.stage.querySelector('img')){
       els.stage.innerHTML = '<div class="spinner"></div>';
     }
@@ -819,7 +913,7 @@ canvas{ display:none; }
     const baseZoom = parseInt(els.scale.value, 10) / 100;
     drawCover(ctxBase, base, outSize, baseZoom, state.offsetX, state.offsetY);
     const ringZoom = parseInt(els.ringScale.value, 10) / 100;
-    drawCover(ctxRing, state.ringProc || ring, outSize, ringZoom, 0, 0);
+    drawCover(ctxRing, state.ringProc || ring, outSize, ringZoom, state.ringOffsetX, state.ringOffsetY);
 
     // 合成：本体 → リング（背景を透明にしたリング、または透過済みのリング）
     ctxOut.clearRect(0,0,outSize,outSize);
@@ -842,6 +936,8 @@ canvas{ display:none; }
       els.dimLabel.textContent = outSize + ' × ' + outSize + ' PX';
       els.resultArea.style.display = 'block';
       els.dlLink.href = state.outUrl;
+      els.dlMini.href = state.outUrl;
+      els.dlMini.style.display = 'inline-block';
       if(oldUrl) URL.revokeObjectURL(oldUrl);
     }, 'image/png');
   }
